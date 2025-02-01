@@ -59,3 +59,5 @@ This tool allows you to scan a website and generate an SEO-friendly `sitemap.xml
    - **Cancel:** Stop the scan at any time.
    - **Clear Log:** Clear the log output.
    - **Save the Sitemap:** When the process finishes, a dialog will appear to let you choose where to save the generated `sitemap.xml`.
+  
+For those who don't want to bother, I'm putting this directly as an .exe. I try to keep it up to date, even if it's not with every update: https://drive.google.com/file/d/1I6gs3_nKUOL0xTjvKm7HOZSu5sUENqCq/view?usp=sharing

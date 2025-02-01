@@ -1,5 +1,4 @@
 
-
 import locale
 
 
@@ -8,7 +7,6 @@ def safe_setlocale(category, loc=None):
     try:
         return _original_setlocale(category, loc)
     except locale.Error:
-
         return _original_setlocale(category, 'C')
 locale.setlocale = safe_setlocale
 
@@ -57,6 +55,7 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
                     log_callback(f"link ERROR: {current_url} - Status Code: {response.status_code}")
                 continue
 
+
             last_modified = response.headers.get('Last-Modified')
             if last_modified:
                 try:
@@ -69,6 +68,7 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
             soup = BeautifulSoup(response.text, 'html.parser')
             visited.add(current_url)
 
+
             if current_url == remove_fragment(url):
                 priority = "1.0"
                 changefreq = "daily"
@@ -76,11 +76,21 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
                 priority = "0.8"
                 changefreq = "weekly"
 
+
+            images = []
+            for img in soup.find_all('img'):
+                if 'src' in img.attrs:
+                    img_url = urljoin(current_url, img['src'])
+                    img_url = remove_fragment(img_url)
+                    if img_url not in images:
+                        images.append(img_url)
+
             links.append({
                 "loc": current_url,
                 "lastmod": lastmod,
                 "priority": priority,
-                "changefreq": changefreq
+                "changefreq": changefreq,
+                "images": images
             })
 
             if log_callback:
@@ -90,7 +100,7 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
             for link in soup.find_all('a', href=True):
                 href = link['href']
                 full_url = urljoin(current_url, href)
-                full_url = remove_fragment(full_url) 
+                full_url = remove_fragment(full_url)
                 parsed = urlparse(full_url)
                 if (parsed.netloc == urlparse(url).netloc and
                     full_url not in visited and
@@ -104,7 +114,9 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
 
 def create_sitemap(links, filename):
 
-    root = ET.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
+    root = ET.Element("urlset", 
+                      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9", 
+                      **{"xmlns:image": "http://www.google.com/schemas/sitemap-image/1.1"})
     
     for entry in links:
         url_element = ET.SubElement(root, "url")
@@ -112,7 +124,12 @@ def create_sitemap(links, filename):
         ET.SubElement(url_element, "lastmod").text = entry["lastmod"]
         ET.SubElement(url_element, "priority").text = entry["priority"]
         ET.SubElement(url_element, "changefreq").text = entry["changefreq"]
-    
+
+        if "images" in entry and entry["images"]:
+            for img in entry["images"]:
+                image_elem = ET.SubElement(url_element, "image:image")
+                ET.SubElement(image_elem, "image:loc").text = img
+
     tree = ET.ElementTree(root)
     tree.write(filename, encoding='utf-8', xml_declaration=True)
 
@@ -134,17 +151,20 @@ class SitemapGeneratorApp(ttk.Window):
         frame = ttk.Frame(self, padding=10)
         frame.pack(fill="x")
 
+
         url_label = ttk.Label(frame, text="Website URL:")
         url_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
         self.url_entry = ttk.Entry(frame, width=60)
         self.url_entry.grid(row=0, column=1, padx=5, pady=5)
-        self.url_entry.insert(0, "https://www.altinorankimya.com")
+        self.url_entry.insert(0, "https://www.redaysoft.com")
+
 
         max_label = ttk.Label(frame, text="Max Pages:")
         max_label.grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.max_entry = ttk.Entry(frame, width=10)
         self.max_entry.grid(row=1, column=1, sticky="w", padx=5, pady=5)
         self.max_entry.insert(0, "500")
+
 
         self.generate_button = ttk.Button(frame, text="Generate Sitemap", command=self.start_generation, bootstyle=PRIMARY)
         self.generate_button.grid(row=2, column=0, padx=5, pady=10)
@@ -155,13 +175,16 @@ class SitemapGeneratorApp(ttk.Window):
         self.clear_button = ttk.Button(frame, text="Clear Log", command=self.clear_log, bootstyle=INFO)
         self.clear_button.grid(row=2, column=1, padx=5, pady=10, sticky="e")
 
+
         self.progress = ttk.Progressbar(frame, mode="indeterminate")
         self.progress.grid(row=3, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
+
 
         log_label = ttk.Label(self, text="Log:")
         log_label.pack(anchor="w", padx=10)
         self.log_text = scrolledtext.ScrolledText(self, width=105, height=30, state="disabled", font=("Courier", 10))
         self.log_text.pack(padx=10, pady=5)
+
 
         self.status_label = ttk.Label(self, text="Ready", bootstyle="secondary")
         self.status_label.pack(anchor="w", padx=10, pady=5)
@@ -184,6 +207,7 @@ class SitemapGeneratorApp(ttk.Window):
         if not url:
             messagebox.showerror("Input Error", "Please enter a website URL.")
             return
+
 
         filename = filedialog.asksaveasfilename(
             defaultextension=".xml",

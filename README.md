@@ -1,11 +1,8 @@
-# Modern Sitemap Generator Tool
+# Sitemap Generator Tool
 
 This tool allows you to scan a website and generate an SEO-friendly `sitemap.xml` file by extracting internal links. It provides a **modern user interface (Tkinter + ttkbootstrap)** for a user-friendly experience and includes **internet connection checking, cancelable operations, detailed logging, and file-saving options**.
 
 ## Features
-
-- **Modern User Interface:**  
-  Uses `ttkbootstrap` for a sleek and easy-to-use UI.
 
 - **SEO-Friendly Sitemap Generation:**  
   Crawls internal links from a specified website and outputs a `sitemap.xml` file.

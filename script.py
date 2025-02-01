@@ -1,17 +1,14 @@
-"""
-Gereksinimler:
-    pip install requests bs4 ttkbootstrap
-"""
+
 
 import locale
 
-# Monkey-patch: locale.setlocale hata verdiğinde 'C' locale'ini kullan.
+
 _original_setlocale = locale.setlocale
 def safe_setlocale(category, loc=None):
     try:
         return _original_setlocale(category, loc)
     except locale.Error:
-        # Hata alındığında 'C' locale'ini ayarla
+
         return _original_setlocale(category, 'C')
 locale.setlocale = safe_setlocale
 
@@ -28,10 +25,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 def check_internet_connection():
-    """
-    İnternet bağlantısını kontrol eder.
-    Google'a bağlanmaya çalışır; başarısız olursa False döner.
-    """
+
     try:
         requests.get("http://www.google.com", timeout=5)
         return True
@@ -39,18 +33,11 @@ def check_internet_connection():
         return False
 
 def remove_fragment(url):
-    """
-    URL içerisindeki '#' ve sonrasını kaldırır.
-    """
+
     return url.split("#")[0]
 
 def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
-    """
-    Verilen URL'den site içindeki linkleri toplayarak sitemap için liste oluşturur.
-    Bulunan her linkin fragment (çapa) kısmı kaldırılır.
-    Her link işlendiğinde log_callback ile durum bilgisi gönderilir.
-    İşlem iptal edilmek istenirse, stop_event sayesinde döngü sonlandırılır.
-    """
+
     visited = set()
     to_visit = [remove_fragment(url)]
     links = []
@@ -59,7 +46,6 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
         if stop_event and stop_event.is_set():
             break
 
-        # Çalıştırmadan önce URL'deki fragment'ı kaldırıyoruz
         current_url = remove_fragment(to_visit.pop(0))
         if current_url in visited:
             continue
@@ -71,7 +57,6 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
                     log_callback(f"link ERROR: {current_url} - Status Code: {response.status_code}")
                 continue
 
-            # Last-Modified header'ı yoksa şimdiki zamanı kullan
             last_modified = response.headers.get('Last-Modified')
             if last_modified:
                 try:
@@ -84,7 +69,6 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
             soup = BeautifulSoup(response.text, 'html.parser')
             visited.add(current_url)
 
-            # Öncelik ve değişim sıklığı ayarlaması
             if current_url == remove_fragment(url):
                 priority = "1.0"
                 changefreq = "daily"
@@ -102,13 +86,12 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
             if log_callback:
                 log_callback(f"link OK: {current_url}")
 
-            # Sayfa içindeki linkleri ekle
+
             for link in soup.find_all('a', href=True):
                 href = link['href']
                 full_url = urljoin(current_url, href)
-                full_url = remove_fragment(full_url)  # fragment'ı kaldır
+                full_url = remove_fragment(full_url) 
                 parsed = urlparse(full_url)
-                # Sadece aynı domaine ait linkleri ekle ve tekrarı önle
                 if (parsed.netloc == urlparse(url).netloc and
                     full_url not in visited and
                     full_url not in to_visit):
@@ -120,9 +103,7 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
     return links
 
 def create_sitemap(links, filename):
-    """
-    Verilen link listesini sitemap.xml formatında belirtilen dosya adına yazar.
-    """
+
     root = ET.Element("urlset", xmlns="http://www.sitemaps.org/schemas/sitemap/0.9")
     
     for entry in links:
@@ -137,38 +118,34 @@ def create_sitemap(links, filename):
 
 class SitemapGeneratorApp(ttk.Window):
     def __init__(self):
-        # "flatly" teması modern ve ferah bir görünüm sunar; dilerseniz başka temalar da deneyebilirsiniz.
+
         super().__init__(themename="flatly")
         self.title("Modern Sitemap Generator Tool")
         self.geometry("900x650")
         self.resizable(False, False)
 
-        # Threadler arası log aktarımı için kuyruk ve iptal için bayrak
         self.log_queue = queue.Queue()
         self.stop_event = threading.Event()
 
         self.create_widgets()
 
     def create_widgets(self):
-        # Üst kısımda ayar ve kontrol butonlarının bulunduğu frame
+
         frame = ttk.Frame(self, padding=10)
         frame.pack(fill="x")
 
-        # URL girişi
         url_label = ttk.Label(frame, text="Website URL:")
         url_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
         self.url_entry = ttk.Entry(frame, width=60)
         self.url_entry.grid(row=0, column=1, padx=5, pady=5)
         self.url_entry.insert(0, "https://www.altinorankimya.com")
 
-        # Maksimum sayfa sayısı
         max_label = ttk.Label(frame, text="Max Pages:")
         max_label.grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.max_entry = ttk.Entry(frame, width=10)
         self.max_entry.grid(row=1, column=1, sticky="w", padx=5, pady=5)
         self.max_entry.insert(0, "500")
 
-        # Butonlar: Sitemap Oluştur, İptal, Log Temizle
         self.generate_button = ttk.Button(frame, text="Generate Sitemap", command=self.start_generation, bootstyle=PRIMARY)
         self.generate_button.grid(row=2, column=0, padx=5, pady=10)
 
@@ -178,24 +155,21 @@ class SitemapGeneratorApp(ttk.Window):
         self.clear_button = ttk.Button(frame, text="Clear Log", command=self.clear_log, bootstyle=INFO)
         self.clear_button.grid(row=2, column=1, padx=5, pady=10, sticky="e")
 
-        # İlerleme çubuğu
         self.progress = ttk.Progressbar(frame, mode="indeterminate")
         self.progress.grid(row=3, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
 
-        # Log ekranı
         log_label = ttk.Label(self, text="Log:")
         log_label.pack(anchor="w", padx=10)
         self.log_text = scrolledtext.ScrolledText(self, width=105, height=30, state="disabled", font=("Courier", 10))
         self.log_text.pack(padx=10, pady=5)
 
-        # Durum göstergesi
         self.status_label = ttk.Label(self, text="Ready", bootstyle="secondary")
         self.status_label.pack(anchor="w", padx=10, pady=5)
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def start_generation(self):
-        # İnternet bağlantısını kontrol et
+
         if not check_internet_connection():
             messagebox.showerror("Internet Connection Error", "No internet connection detected. Please check your connection and try again.")
             return
@@ -211,7 +185,6 @@ class SitemapGeneratorApp(ttk.Window):
             messagebox.showerror("Input Error", "Please enter a website URL.")
             return
 
-        # Sitemap dosyasının kaydedileceği yeri seç
         filename = filedialog.asksaveasfilename(
             defaultextension=".xml",
             filetypes=[("XML files", "*.xml")],
@@ -227,7 +200,7 @@ class SitemapGeneratorApp(ttk.Window):
         self.generate_button.config(state="disabled")
         self.cancel_button.config(state="normal")
 
-        # Arka planda sitemap oluşturma işlemini başlat
+
         threading.Thread(target=self.run_generation, args=(url, max_pages, filename), daemon=True).start()
         self.after(100, self.process_log_queue)
 

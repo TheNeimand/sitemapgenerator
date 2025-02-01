@@ -29,6 +29,10 @@ def check_internet_connection():
 def remove_fragment(url):
     return url.split("#")[0]
 
+def is_image_url(url):
+    image_extensions = ('.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp', '.svg')
+    return url.lower().endswith(image_extensions)
+
 def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
     visited = set()
     to_visit = [remove_fragment(url)]
@@ -37,6 +41,8 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
         if stop_event and stop_event.is_set():
             break
         current_url = remove_fragment(to_visit.pop(0))
+        if is_image_url(current_url):
+            continue
         if current_url in visited:
             continue
         try:
@@ -73,6 +79,8 @@ def get_all_links(url, max_pages=500, log_callback=None, stop_event=None):
                 href = link['href']
                 full_url = urljoin(current_url, href)
                 full_url = remove_fragment(full_url)
+                if is_image_url(full_url):
+                    continue
                 parsed = urlparse(full_url)
                 if (parsed.netloc == urlparse(url).netloc and
                     full_url not in visited and
@@ -122,7 +130,7 @@ class SitemapGeneratorApp(ttk.Window):
         url_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
         self.url_entry = ttk.Entry(self.control_frame, width=60)
         self.url_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
-        self.url_entry.insert(0, "https://www.redaysoft.com")
+        self.url_entry.insert(0, "https://www.altinorankimya.com")
         max_label = ttk.Label(self.control_frame, text="Max Pages:")
         max_label.grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.max_entry = ttk.Entry(self.control_frame, width=10)

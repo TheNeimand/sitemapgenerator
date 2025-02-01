@@ -130,7 +130,7 @@ class SitemapGeneratorApp(ttk.Window):
         url_label.grid(row=0, column=0, sticky="w", padx=5, pady=5)
         self.url_entry = ttk.Entry(self.control_frame, width=60)
         self.url_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
-        self.url_entry.insert(0, "https://www.altinorankimya.com")
+        self.url_entry.insert(0, "https://www.redaysoft.com")
         max_label = ttk.Label(self.control_frame, text="Max Pages:")
         max_label.grid(row=1, column=0, sticky="w", padx=5, pady=5)
         self.max_entry = ttk.Entry(self.control_frame, width=10)
